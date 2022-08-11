@@ -23,8 +23,9 @@ for key, value in district_map.items():
 
         # 解析html
         soup = BeautifulSoup(request.text, 'lxml')
-        total_num = soup.find('h2', class_='total fl').find('span').string
-        total_page_num = get_total_page_num(int(total_num), 30)
+        if page_num == 0:
+            total_num = soup.find('h2', class_='total fl').find('span').string
+            total_page_num = get_total_page_num(int(total_num), 30)
         house_list = soup.find_all('li', class_='clear')
         for house_info in house_list:
             title = house_info.find('div', class_='title').find('a').string
