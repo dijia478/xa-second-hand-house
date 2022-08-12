@@ -40,11 +40,14 @@ def run():
             for house_info in house_list:
                 title = house_info.find('div', class_='title').find('a').string
                 position_info = house_info.find('div', class_='positionInfo').find('a').string
+                position_info = house_info.find('div', class_='houseInfo').find('a').string
                 print(title + position_info)
 
             # 处理分页
             if page_num == 1:
                 total_count = soup.find('h2', class_='total fl').find('span').string
+                if int(total_count) > 3000:
+                    raise ValueError('当前条件下超过3000个结果集', key)
                 total_page_num = get_total_page_num(int(total_count), 30)
             page_num += 1
 
