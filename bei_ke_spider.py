@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 
 
-class LianJiaSpider:
+class BeiKeSpider:
 
     def __init__(self):
         self.url = 'https://xa.ke.com/ershoufang/{}/pg{}ba{}ea{}'
@@ -77,10 +77,13 @@ class LianJiaSpider:
                             if int(total_count) > 3000:
                                 raise ValueError('超过3000个结果集，url：{}'.format(request.url))
                             total_page_num = self.get_total_page_num(int(total_count))
+                    else:
+                        print('重试10次依然失败，跳过当前界面。。。')
+
                     page_num += 1
                 area += limit
 
 
 if __name__ == '__main__':
-    spider = LianJiaSpider()
+    spider = BeiKeSpider()
     spider.run()
