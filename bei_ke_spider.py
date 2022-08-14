@@ -1,5 +1,4 @@
 import datetime
-import random
 import re
 import time
 from decimal import *
@@ -38,7 +37,7 @@ class BeiKeSpider:
         while retry <= self.retry:
             try:
                 header = {
-                    'User-Agent': random.choice(ua_pool.ua_info_list)
+                    'User-Agent': ua_pool.get_ua()
                 }
                 return requests.get(url=url, headers=header)
             except Exception as e:
@@ -88,10 +87,10 @@ class BeiKeSpider:
                 page_num = 1  # 当前页数
                 while page_num <= total_page_num:
                     # 发起请求
-                    request = self.load_data(key, page_num, area, limit)
-                    if request is not None:
+                    response = self.load_data(key, page_num, area, limit)
+                    if response is not None:
                         # 解析html
-                        soup = BeautifulSoup(request.text, 'lxml')
+                        soup = BeautifulSoup(response.text, 'lxml')
                         house_list = soup.find_all('li', class_='clear')
                         if len(house_list) == 0:
                             break
@@ -131,7 +130,7 @@ class BeiKeSpider:
                         if page_num == 1:
                             total_count = soup.find('h2', class_='total fl').find('span').string
                             if int(total_count) > 3000:
-                                raise ValueError('超过3000个结果集，url：{}'.format(request.url))
+                                raise ValueError('超过3000个结果集，url：{}'.format(response.url))
                             total_page_num = self.get_total_page_num(int(total_count))
                     else:
                         print('重试10次依然失败，跳过当前界面。。。')
