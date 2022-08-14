@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import ua_pool
 
 ip_proxy_pool = [
-    {'http': 'http://95.59.26.129:80', 'https': 'http://95.59.26.129:80'}
+    {'http': 'http://101.200.127.149:3129', 'https': 'http://101.200.127.149:3129'}
 ]
 
 
@@ -22,7 +22,7 @@ def init():
             ip = ip_port.find_all('td')[0].text
             port = ip_port.find_all('td')[1].text
             check_ip(ip, port)
-        if len(ip_proxy_pool) > 20:
+        if len(ip_proxy_pool) > 10:
             break
     print('代理池初始化完成', len(ip_proxy_pool))
 
@@ -36,7 +36,7 @@ def check_ip(ip: str, port: str):
         "https": 'http://' + ip + ':' + port
     }
     try:
-        response = requests.get(url='http://icanhazip.com', headers=headers, proxies=proxies, timeout=1)  # 设置timeout，使响应等待1s
+        response = requests.get(url='https://xa.ke.com/ershoufang/', headers=headers, proxies=proxies, timeout=5)  # 设置timeout，使响应等待1s
         if response.status_code == 200:
             print(proxies, '可用')
             ip_proxy_pool.append(proxies)
@@ -53,10 +53,7 @@ def get_proxies():
 
 
 if __name__ == '__main__':
-    # for i in range(20):
-    #     proxies = get_proxies()
-    #     print(proxies)
-    proxies = get_proxies()
-    req = requests.get('https://icanhazip.com/', proxies=proxies)
-    print(req.text)
-
+    init()
+    file_path = 'ip_proxy_pool.txt'
+    with open(file_path, mode='w', encoding='utf-8') as file_obj:
+        file_obj.write(str(ip_proxy_pool))
