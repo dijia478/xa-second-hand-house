@@ -24,9 +24,13 @@ def init():
             ip = ip_port.find('td', attrs={'data-title': 'IP'}).text
             port = ip_port.find('td', attrs={'data-title': 'PORT'}).text
             check_ip(ip, port)
-            if len(ip_proxy_pool) > 5:
-                print('代理池初始化完成', len(ip_proxy_pool))
-                return
+        if len(ip_proxy_pool) > 50:
+            print('代理池初始化完成', len(ip_proxy_pool))
+            break
+    # 持久化
+    file_path = 'ip_proxy_pool.txt'
+    with open(file_path, mode='w', encoding='utf-8') as file_obj:
+        file_obj.write(str(ip_proxy_pool))
 
 
 def check_ip(ip: str, port: str):
@@ -50,20 +54,18 @@ def check_ip(ip: str, port: str):
 
 def get_proxies():
     global ip_proxy_pool
-    if len(ip_proxy_pool) >= 20:
+    if len(ip_proxy_pool) != 0:
         return random.choice(ip_proxy_pool)
     with open('ip_proxy_pool.txt', encoding='utf-8') as ip_proxy:
         contents = ip_proxy.read()
         if contents == '':
             init()
-        ip_proxy_pool = eval(contents)
-        if len(ip_proxy_pool) == 0:
-            init()
+        else:
+            ip_proxy_pool = eval(contents)
+            if len(ip_proxy_pool) == 0:
+                init()
     return random.choice(ip_proxy_pool)
 
 
 if __name__ == '__main__':
     print(get_proxies())
-    file_path = 'ip_proxy_pool.txt'
-    with open(file_path, mode='w', encoding='utf-8') as file_obj:
-        file_obj.write(str(ip_proxy_pool))
