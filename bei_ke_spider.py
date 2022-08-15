@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import district
+import proxy_pool
 import ua_pool
 
 
@@ -22,7 +23,7 @@ class BeiKeSpider:
         # 总插入条数
         self.total_insert = 0
         # 数据库
-        self.db = pymysql.connect(host='192.168.64.200', user='root', password='111111', database='dijia478_test')
+        self.db = pymysql.connect(host='192.168.0.119', user='ingage', password='ingage', database='dijia478_test')
         # 脚本执行时间
         self.datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -39,11 +40,12 @@ class BeiKeSpider:
                 header = {
                     'User-Agent': ua_pool.get_ua()
                 }
-                return requests.get(url=url, headers=header)
+                proxy = proxy_pool.get_proxies()
+                return requests.get(url=url, headers=header, proxies=proxy, timeout=10)
             except Exception as e:
                 print('第{}次请求{}出现异常，开始重试'.format(retry, url), e)
                 retry += 1
-                time.sleep(3)
+                time.sleep(10)
 
     # 批量插入数据库
     def insert_data(self, data_list):
