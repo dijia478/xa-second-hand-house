@@ -41,9 +41,9 @@ class BeiKeSpider:
                     'User-Agent': ua_pool.get_ua()
                 }
                 proxy = proxy_pool.get_proxies()
-                return requests.get(url=url, headers=header, proxies=proxy, timeout=10)
-            except Exception as e:
-                print('第{}次请求{}出现异常，开始重试'.format(retry, url), e)
+                return requests.get(url=url, headers=header, proxies=proxy, timeout=3)
+            except:
+                print('第{}次请求{}出现异常，开始重试'.format(retry, url))
                 retry += 1
                 time.sleep(10)
 
