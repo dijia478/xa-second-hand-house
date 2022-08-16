@@ -37,6 +37,7 @@ class BeiKeSpider:
         retry = 1
         while retry <= self.retry:
             try:
+                time.sleep(1)
                 header = {
                     'User-Agent': ua_pool.get_ua()
                 }
@@ -57,7 +58,7 @@ class BeiKeSpider:
             # 将数据提交数据库
             self.db.commit()
             self.total_insert += len(data_list)
-            print('本次插入数据库：{}条数据，共：{}条\n'.format(len(data_list), self.total_insert))
+            print('{} 本次插入数据库：{}条数据，共：{}条\n'.format(datetime.datetime.now(), len(data_list), self.total_insert))
         except Exception as e:
             print('批量插入数据库发生错误，开始回滚', e)
             # 如果发生错误则回滚
@@ -72,7 +73,7 @@ class BeiKeSpider:
         district_map = district.district_map
         for key, value in district_map.items():
             print('================================')
-            print('查询{}的房源'.format(value))
+            print('{} 查询{}的房源'.format(datetime.datetime.now(), value))
             area = 0  # 面积
             limit = 10  # 面积步长
             while area < 10000:
@@ -83,7 +84,7 @@ class BeiKeSpider:
                 elif area >= 200:
                     limit = 10000
 
-                print('面积区间{}到{}的房源：'.format(area, area + limit))
+                print('{} 面积区间{}到{}的房源：'.format(datetime.datetime.now(), area, area + limit))
                 data_list = []  # 本次要批量插入的数据
                 total_page_num = 100  # 总页数
                 page_num = 1  # 当前页数
@@ -95,7 +96,9 @@ class BeiKeSpider:
                         soup = BeautifulSoup(response.text, 'lxml')
                         house_list = soup.find_all('li', class_='clear')
                         if len(house_list) == 0:
-                            break
+                            print("当前页面 {} 没数据，重新请求".format(self.url.format(key, page_num, area, area + limit)))
+                            time.sleep(10)
+                            continue
 
                         for info in house_list:
                             title_list = info.find('div', class_='title').text.replace('\n', '').split()
@@ -144,7 +147,9 @@ class BeiKeSpider:
 
 
 if __name__ == '__main__':
+    print('爬取开始', datetime.datetime.now())
     spider = BeiKeSpider()
     spider.run()
     # 关闭数据库连接
     spider.db.close()
+    print('爬取结束', datetime.datetime.now())
