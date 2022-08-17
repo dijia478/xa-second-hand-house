@@ -44,9 +44,9 @@ class BeiKeSpider:
                 proxy = proxy_pool.get_proxies()
                 return requests.get(url=url, headers=header, proxies=proxy, timeout=3)
             except:
-                print('第{}次请求{}出现异常，开始重试'.format(retry, url))
+                print('{} 第{}次请求{}出现异常，稍后开始重试'.format(datetime.datetime.now(), retry, url))
                 retry += 1
-                time.sleep(10)
+                time.sleep(30)
 
     # 批量插入数据库
     def insert_data(self, data_list):
@@ -96,8 +96,8 @@ class BeiKeSpider:
                         soup = BeautifulSoup(response.text, 'lxml')
                         house_list = soup.find_all('li', class_='clear')
                         if len(house_list) == 0 and page_num != 1:
-                            print("当前页面 {} 没数据，重新请求".format(self.url.format(key, page_num, area, area + limit)))
-                            time.sleep(10)
+                            print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), self.url.format(key, page_num, area, area + limit)))
+                            time.sleep(30)
                             continue
 
                         for info in house_list:
@@ -138,7 +138,7 @@ class BeiKeSpider:
                                 raise ValueError('超过3000个结果集，url：{}'.format(response.url))
                             total_page_num = self.get_total_page_num(int(total_count))
                     else:
-                        print('重试10次依然失败，跳过当前界面。。。')
+                        print('{} 重试10次依然失败，跳过当前界面。。。'.format(datetime.datetime.now()))
                     page_num += 1
 
                 # 批量插入
