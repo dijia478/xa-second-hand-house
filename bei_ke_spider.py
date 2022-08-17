@@ -95,7 +95,7 @@ class BeiKeSpider:
                         # 解析html
                         soup = BeautifulSoup(response.text, 'lxml')
                         house_list = soup.find_all('li', class_='clear')
-                        if len(house_list) == 0:
+                        if len(house_list) == 0 and page_num != 1:
                             print("当前页面 {} 没数据，重新请求".format(self.url.format(key, page_num, area, area + limit)))
                             time.sleep(10)
                             continue
