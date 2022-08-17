@@ -19,7 +19,7 @@ class BeiKeSpider:
         # 每页条数
         self.page_size = 30
         # 请求重试次数
-        self.retry = 10
+        self.retry = 20
         # 总插入条数
         self.total_insert = 0
         # 数据库
@@ -94,6 +94,12 @@ class BeiKeSpider:
                     if response is not None:
                         # 解析html
                         soup = BeautifulSoup(response.text, 'lxml')
+                        # 处理分页
+                        total_count = soup.find('h2', class_='total fl').find('span').string
+                        if int(total_count) > 3000:
+                            raise ValueError('超过3000个结果集，url：{}'.format(response.url))
+                        total_page_num = self.get_total_page_num(int(total_count))
+
                         house_list = soup.find_all('li', class_='clear')
                         if len(house_list) == 0 and page_num != 1:
                             print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), self.url.format(key, page_num, area, area + limit)))
@@ -130,15 +136,8 @@ class BeiKeSpider:
                                     info_dict.get('total_floor_num'), unit_price, info_dict.get('total_price'),
                                     self.datetime, self.datetime)
                             data_list.append(data)
-
-                        # 处理分页
-                        if page_num == 1:
-                            total_count = soup.find('h2', class_='total fl').find('span').string
-                            if int(total_count) > 3000:
-                                raise ValueError('超过3000个结果集，url：{}'.format(response.url))
-                            total_page_num = self.get_total_page_num(int(total_count))
                     else:
-                        print('{} 重试10次依然失败，跳过当前界面。。。'.format(datetime.datetime.now()))
+                        print('{} 请求20次依然失败，跳过当前界面。。。'.format(datetime.datetime.now()))
                     page_num += 1
 
                 # 批量插入
