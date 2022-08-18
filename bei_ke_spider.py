@@ -28,6 +28,8 @@ class BeiKeSpider:
         self.db = pymysql.connect(host='192.168.0.119', user='ingage', password='ingage', database='dijia478_test')
         # 脚本执行时间
         self.datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 设置四舍五入
+        getcontext().rounding = "ROUND_HALF_UP"
 
     # 设置请求面积步长
     @staticmethod
@@ -78,8 +80,8 @@ class BeiKeSpider:
             title_list = info.find('div', class_='title').text.replace('\n', '').split()
             house_info_list = info.find('div', class_='houseInfo').text.replace('\n', '').split()
             follow_info_list = info.find('div', class_='followInfo').text.replace('\n', '').split('/')
-            unit_price = info.find('div', class_='unitPrice').text.replace('\n', '').replace(',', '')
-            unit_price = Decimal(re.search(r'\d+', unit_price).group())
+            total_price = info.find('div', class_='totalPrice totalPrice2').text.replace('\n', '')
+            total_price = Decimal(re.search(r'\d+', total_price).group())
 
             info_dict = {}
             for house_info in house_info_list:
@@ -89,7 +91,7 @@ class BeiKeSpider:
                     info_dict['build_date'] = house_info.strip('建')
                 elif '平米' in house_info:
                     info_dict['buy_area'] = Decimal(house_info.strip('平米'))
-                    info_dict['total_price'] = info_dict['buy_area'] * unit_price
+                    info_dict['unit_price'] = (total_price / info_dict['buy_area']).quantize(Decimal("0.00"))
                 elif '楼层' in house_info and '地下' in house_info:
                     info_dict['floor_num'] = house_info
                 elif '共' in house_info and '层' in house_info:
@@ -103,7 +105,7 @@ class BeiKeSpider:
             data = (title_list[0], value, info_dict.get('house_type'), info_dict.get('build_date'),
                     info_dict.get('release_date'), info_dict.get('follower_num'),
                     info_dict.get('buy_area'), info_dict.get('floor_num'),
-                    info_dict.get('total_floor_num'), unit_price, info_dict.get('total_price'),
+                    info_dict.get('total_floor_num'), info_dict.get('unit_price'), total_price,
                     self.datetime, self.datetime)
             data_list.append(data)
 
