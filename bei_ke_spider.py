@@ -92,7 +92,7 @@ class BeiKeSpider:
                 elif '平米' in house_info:
                     info_dict['buy_area'] = Decimal(house_info.strip('平米'))
                     info_dict['unit_price'] = (total_price / info_dict['buy_area']).quantize(Decimal("0.00"))
-                elif '楼层' in house_info and '地下' in house_info:
+                elif '楼层' in house_info or '地下' in house_info:
                     info_dict['floor_num'] = house_info
                 elif '共' in house_info and '层' in house_info:
                     info_dict['total_floor_num'] = re.search(r'\d+', house_info).group()
