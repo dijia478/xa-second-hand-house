@@ -31,16 +31,18 @@ class BeiKeSpider:
         # 设置四舍五入
         getcontext().rounding = "ROUND_HALF_UP"
 
-    # 设置请求面积步长
+    # 获取请求面积步长
     @staticmethod
     def get_limit(area):
         if area < 80:
             return 10
-        elif 80 <= area < 150:
+        elif 80 <= area < 100:
             return 5
-        elif 150 <= area < 200:
+        elif 100 <= area < 150:
             return 10
-        elif area >= 200:
+        elif 150 <= area < 190:
+            return 20
+        elif area >= 190:
             return 10000
 
     # 获取总页数
