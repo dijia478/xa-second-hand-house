@@ -2,7 +2,7 @@ import requests
 import random
 from bs4 import BeautifulSoup
 
-import ua_pool
+from ua import ua_pool
 
 ip_proxy_pool = [
 ]
@@ -25,7 +25,7 @@ def init():
                 ip = ip_port.find('td', attrs={'data-title': 'IP'}).text
                 port = ip_port.find('td', attrs={'data-title': 'PORT'}).text
                 check_ip(ip, port)
-            if len(ip_proxy_pool) > 20:
+            if len(ip_proxy_pool) > 10:
                 print('代理池初始化完成', len(ip_proxy_pool))
                 break
         except:
@@ -109,8 +109,8 @@ def write_file():
 
 if __name__ == '__main__':
     try:
-        # init()
-        # get_proxies()
+        init()
+        get_proxies()
         check_use_proxy()
     except Exception as e:
         print('出现异常，爬虫终止。。。', e)

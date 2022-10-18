@@ -10,7 +10,7 @@ def get_ua():
 
 def init():
     try:
-        ua = UserAgent(use_cache_server=False)
+        ua = UserAgent()
         for i in range(5000):
             ua_info_list.append(ua.random)
     except Exception as e:
