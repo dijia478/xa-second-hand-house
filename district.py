@@ -7,10 +7,10 @@ district_map = {
     'yanliang': '阎良区',
     'changan7': '长安区',
     'lianhu': '莲湖区',
-    'yanta': '雁塔区',
     'huyiqu': '鄠邑区',
     'gaoling1': '高陵区',
     'lantian': '蓝田县',
     'zhouzhi': '周至县',
-    'xixianxinquxian': '西咸新区'
+    'xixianxinquxian': '西咸新区',
+    'yanta': '雁塔区'
 }

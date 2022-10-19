@@ -46,7 +46,7 @@ class RentalSpider:
             return 1000000
 
     # 获取总页数
-    def get_total_page_num(self, response, soup):
+    def get_total_page_num(self, response, soup, page_num):
         find_p = soup.find('p', class_='content__title')
         if find_p is None:
             return 1000
@@ -57,11 +57,15 @@ class RentalSpider:
         if int(total_count) > 3000:
             print('超过3000个结果集，url：{}'.format(response.url))
             return 100
-        return (int(total_count) + self.page_size - 1) // self.page_size
+
+        total_page_num = (int(total_count) + self.page_size - 1) // self.page_size
+        if page_num == 1:
+            print('{} 共{}条数据，共{}页'.format(datetime.datetime.now(), total_count, total_page_num))
+        return total_page_num
 
     # 发起请求
-    def load_data(self, key: str, page_num: int, area: int, limit: int):
-        url = self.url.format(key, page_num, area, area + limit)
+    def load_data(self, key: str, page_num: int, price: int, limit: int):
+        url = self.url.format(key, page_num, price + 1, price + limit)
         # url = 'https://xa.zu.ke.com/zufang/baqiao/pg28rco11brp2500erp2600'
         retry = 1
         while retry <= self.retry:
@@ -129,7 +133,7 @@ class RentalSpider:
             print('{} 本次插入数据库：{}条数据，共：{}条\n'.format(datetime.datetime.now(), len(data_list), self.total_insert))
         except Exception as e:
             traceback.print_exc()
-            print('批量插入数据库发生错误，开始回滚', e)
+            print('{} 批量插入{}条数据发生错误，开始回滚'.format(datetime.datetime.now(), len(data_list)), e)
             # 如果发生错误则回滚
             self.db.rollback()
 
@@ -142,11 +146,11 @@ class RentalSpider:
         district_map = district.district_map
         for key, value in district_map.items():
             print('================================')
-            print('{} 查询{}的房源'.format(datetime.datetime.now(), value))
+            print('{} 查询区域：{}'.format(datetime.datetime.now(), value))
             price = 0  # 租金
             while price < 1000000:
                 limit = RentalSpider.get_limit(price)
-                print('{} 价格区间{}到{}的房源：'.format(datetime.datetime.now(), price, price + limit))
+                print('{} 价格区间{}到{}的房源：'.format(datetime.datetime.now(), price + 1, price + limit))
                 data_list = []  # 本次要批量插入的数据
                 total_page_num = 100  # 总页数
                 page_num = 1  # 当前页数
@@ -158,13 +162,13 @@ class RentalSpider:
                             # 解析html
                             soup = BeautifulSoup(response.text, 'lxml')
                             # 获取总页数
-                            total_page_num = self.get_total_page_num(response, soup)
+                            total_page_num = self.get_total_page_num(response, soup, page_num)
                             if total_page_num == 1000 and page_num == 1:
                                 print('{} 第一页数据请求失败，无法获取总页数，重新请求'.format(datetime.datetime.now()))
                                 time.sleep(self.retry_sleep)
                                 continue
                             elif total_page_num == 0 and page_num == 1:
-                                print('{} 当前条件下无数据，开始下一个价格段查询，url:{}'.format(datetime.datetime.now(), response.url))
+                                print('{} 当前条件下无数据，开始下一个价格段查询，url:{}\n'.format(datetime.datetime.now(), response.url))
                                 break
 
                             content_list = soup.find('div', class_='content__list')

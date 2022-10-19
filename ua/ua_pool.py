@@ -3,8 +3,8 @@ import random
 
 
 def get_ua():
-    if len(ua_info_list) <= 100:
-        init()
+    # if len(ua_info_list) <= 100:
+    #     init()
     return random.choice(ua_info_list)
 
 
