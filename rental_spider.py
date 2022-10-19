@@ -1,6 +1,7 @@
 import datetime
 import re
 import time
+import traceback
 from decimal import *
 
 import pymysql
@@ -61,6 +62,7 @@ class RentalSpider:
     # 发起请求
     def load_data(self, key: str, page_num: int, area: int, limit: int):
         url = self.url.format(key, page_num, area, area + limit)
+        # url = 'https://xa.zu.ke.com/zufang/baqiao/pg28rco11brp2500erp2600'
         retry = 1
         while retry <= self.retry:
             try:
@@ -83,21 +85,31 @@ class RentalSpider:
             house_info_list = info.find('p', class_='content__list--item--des').text.replace('\n', '').split()
             unit_price = info.find('span', class_='content__list--item-price').text.replace('\n', '')
             unit_price = Decimal(re.search(r'\d+', unit_price).group())
+            title = title_list[0]
 
             info_dict = {}
+            if '·' in title:
+                info_dict['rental_type'] = title.split('·')[0]
+                info_dict['project_name'] = title.split('·')[1]
+            else:
+                info_dict['project_name'] = title
+
             for house_info in house_info_list:
                 if '室' in house_info and '厅' in house_info:
                     info_dict['house_type'] = house_info.replace('/', '')
                 elif '㎡' in house_info:
-                    info_dict['buy_area'] = Decimal(house_info.strip('㎡').replace('/', ''))
-                elif len(house_info) <= 3 and (
-                        '东' in house_info or '南' in house_info or '西' in house_info or '北' in house_info):
+                    replace = house_info.strip('㎡').replace('/', '')
+                    if '-' in replace:
+                        info_dict['buy_area'] = Decimal(replace.split('-')[0])
+                    else:
+                        info_dict['buy_area'] = Decimal(replace)
+                elif len(house_info) <= 3 and ('东' in house_info or '南' in house_info or '西' in house_info or '北' in house_info):
                     if 'toward' in info_dict:
                         info_dict['toward'] = info_dict['toward'] + ',' + house_info.replace('/', '')
                     else:
                         info_dict['toward'] = house_info.replace('/', '')
 
-            data = (title_list[0].split('·')[1], value, title_list[0].split('·')[0], info_dict.get('toward'),
+            data = (info_dict.get('project_name'), value, info_dict.get('rental_type'), info_dict.get('toward'),
                     info_dict.get('house_type'), info_dict.get('buy_area'), unit_price,
                     self.datetime, self.datetime)
             data_list.append(data)
@@ -116,6 +128,7 @@ class RentalSpider:
             self.total_insert += len(data_list)
             print('{} 本次插入数据库：{}条数据，共：{}条\n'.format(datetime.datetime.now(), len(data_list), self.total_insert))
         except Exception as e:
+            traceback.print_exc()
             print('批量插入数据库发生错误，开始回滚', e)
             # 如果发生错误则回滚
             self.db.rollback()
@@ -133,7 +146,7 @@ class RentalSpider:
             price = 0  # 租金
             while price < 1000000:
                 limit = RentalSpider.get_limit(price)
-                print('{} 面积区间{}到{}的房源：'.format(datetime.datetime.now(), price, price + limit))
+                print('{} 价格区间{}到{}的房源：'.format(datetime.datetime.now(), price, price + limit))
                 data_list = []  # 本次要批量插入的数据
                 total_page_num = 100  # 总页数
                 page_num = 1  # 当前页数
@@ -151,13 +164,17 @@ class RentalSpider:
                                 time.sleep(self.retry_sleep)
                                 continue
                             elif total_page_num == 0 and page_num == 1:
-                                print('{} 当前条件下无数据，开始下一个面积段查询，url:{}'.format(datetime.datetime.now(), response.url))
+                                print('{} 当前条件下无数据，开始下一个价格段查询，url:{}'.format(datetime.datetime.now(), response.url))
                                 break
-                            house_list = soup.find_all('div', class_='content__list--item')
+
+                            content_list = soup.find('div', class_='content__list')
+                            if content_list is None:
+                                print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), response.url))
+                                time.sleep(self.retry_sleep)
+                                continue
+                            house_list = content_list.find_all('div', class_='content__list--item')
                             if len(house_list) == 0 and page_num != 1:
-                                print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(),
-                                                                   self.url.format(key, page_num, price,
-                                                                                   price + limit)))
+                                print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), response.url))
                                 time.sleep(self.retry_sleep)
                                 continue
 
@@ -166,6 +183,7 @@ class RentalSpider:
                         else:
                             print('{} 请求{}次依然失败，跳过当前界面。。。'.format(datetime.datetime.now(), self.retry))
                     except Exception as e:
+                        traceback.print_exc()
                         print('发生异常，跳过当前界面，url:{}'.format(self.url.format(key, page_num, price, price + limit)), e)
 
                     page_num += 1
