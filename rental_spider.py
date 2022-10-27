@@ -66,7 +66,6 @@ class RentalSpider:
     # 发起请求
     def load_data(self, key: str, page_num: int, price: int, limit: int):
         url = self.url.format(key, page_num, price + 1, price + limit)
-        # url = 'https://xa.zu.ke.com/zufang/baqiao/pg28rco11brp2500erp2600'
         retry = 1
         while retry <= self.retry:
             try:
@@ -173,12 +172,12 @@ class RentalSpider:
 
                             content_list = soup.find('div', class_='content__list')
                             if content_list is None:
-                                print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), response.url))
+                                print("{} 当前页面 {} 重定向错误，重新请求".format(datetime.datetime.now(), response.url))
                                 time.sleep(self.retry_sleep)
                                 continue
                             house_list = content_list.find_all('div', class_='content__list--item')
                             if len(house_list) == 0 and page_num != 1:
-                                print("{} 当前页面 {} 没数据，重新请求".format(datetime.datetime.now(), response.url))
+                                print("{} 当前页面 {} 重定向错误，重新请求".format(datetime.datetime.now(), response.url))
                                 time.sleep(self.retry_sleep)
                                 continue
 
@@ -199,8 +198,8 @@ class RentalSpider:
 
 if __name__ == '__main__':
     spider = RentalSpider()
-    print('爬取开始', spider.datetime)
+    print('\n{} 爬取开始'.format(datetime.datetime.now()))
     spider.run()
     # 关闭数据库连接
     spider.db.close()
-    print('爬取结束', spider.datetime)
+    print('{} 爬取结束'.format(datetime.datetime.now()))
