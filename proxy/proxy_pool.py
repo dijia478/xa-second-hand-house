@@ -9,7 +9,7 @@ ip_proxy_pool = [
 
 
 def init():
-    url = 'https://free.kuaidaili.com/free/inha/{}/'
+    url = 'https://www.kuaidaili.com/free/inha/{}/'
     for i in range(4000):
         try:
             header = {
@@ -25,9 +25,9 @@ def init():
                 ip = ip_port.find('td', attrs={'data-title': 'IP'}).text
                 port = ip_port.find('td', attrs={'data-title': 'PORT'}).text
                 check_ip(ip, port)
-            if len(ip_proxy_pool) > 10:
+            if len(ip_proxy_pool) >= 3:
                 print('代理池初始化完成', len(ip_proxy_pool))
-                break
+                return
         except:
             print('请求{}页的ip代理出错，跳过'.format(i))
 
@@ -89,8 +89,8 @@ def check_use_proxy():
             else:
                 print(proxy, '不可用')
                 remove_list.append(proxy)
-        except:
-            print(proxy, '请求异常')
+        except Exception as e:
+            print(proxy, '请求异常', e)
             remove_list.append(proxy)
 
     for proxy in remove_list:

@@ -28,6 +28,8 @@ class SecondHandSpider:
         self.db = pymysql.connect(host='192.168.0.119', user='ingage', password='ingage', database='dijia478_test')
         # 脚本执行时间
         self.datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 经纬度缓存
+        self.lng_lat_map = {}
         # 设置四舍五入
         getcontext().rounding = "ROUND_HALF_UP"
 
@@ -59,8 +61,8 @@ class SecondHandSpider:
             return 100
         return (int(total_count) + self.page_size - 1) // self.page_size
 
-    # 发起请求
-    def load_data(self, key: str, page_num: int, area: int, limit: int):
+    # 发起列表请求
+    def load_list_data(self, key: str, page_num: int, area: int, limit: int):
         url = self.url.format(key, page_num, area, area + limit)
         retry = 1
         while retry <= self.retry:
@@ -69,10 +71,28 @@ class SecondHandSpider:
                 header = {
                     'User-Agent': ua_pool.get_ua()
                 }
-                proxy = proxy_pool.get_proxies()
-                return requests.get(url=url, headers=header, proxies=proxy, timeout=3)
-            except:
-                print('{} 第{}次请求 {} 出现异常，稍后开始重试'.format(datetime.datetime.now(), retry, url))
+                # proxy = proxy_pool.get_proxies()
+                # return requests.get(url=url, headers=header, proxies=proxy, timeout=3)
+                return requests.get(url=url, headers=header, timeout=3)
+            except Exception as e:
+                print('{} 第{}次请求 {} 出现异常，稍后开始重试'.format(datetime.datetime.now(), retry, url), e)
+                retry += 1
+                time.sleep(self.retry_sleep)
+
+    # 发起详情页请求
+    def load_info_data(self, url: str):
+        retry = 1
+        while retry <= self.retry:
+            try:
+                time.sleep(1)
+                header = {
+                    'User-Agent': ua_pool.get_ua()
+                }
+                # proxy = proxy_pool.get_proxies()
+                # return requests.get(url=url, headers=header, proxies=proxy, timeout=3)
+                return requests.get(url=url, headers=header, timeout=3)
+            except Exception as e:
+                print('{} 第{}次请求 {} 出现异常，稍后开始重试'.format(datetime.datetime.now(), retry, url), e)
                 retry += 1
                 time.sleep(self.retry_sleep)
 
@@ -104,11 +124,33 @@ class SecondHandSpider:
                 elif '发布' in follow_info:
                     info_dict['release_date'] = follow_info.strip().replace('发布', '')
 
-            data = (title_list[0], value, info_dict.get('house_type'), info_dict.get('build_date'),
+            # 获取经纬度
+            longitude = '0.0'
+            latitude = '0.0'
+            lng_lat = self.lng_lat_map.get(value + title_list[0])
+            if lng_lat is not None:
+                longitude = lng_lat.split(',')[0]
+                latitude = lng_lat.split(',')[1]
+            else:
+                href = info.find('a', class_='maidian-detail').attrs['href']
+                data_maidian = info.find('a', class_='maidian-detail').attrs['data-maidian']
+                response = self.load_info_data(href + "?fb_expo_id=" + data_maidian)
+                if response is not None:
+                    # 解析html
+                    soup = BeautifulSoup(response.text, 'lxml')
+                    lng_lat = re.search(r'resblockPosition: \'(.+?)\'', str(soup.find_all('script'))).group(1)
+                    longitude = lng_lat.split(',')[0]
+                    latitude = lng_lat.split(',')[1]
+                    self.lng_lat_map[value + title_list[0]] = lng_lat
+
+            data = [title_list[0], value,
+                    Decimal(longitude).quantize(Decimal("0.000000")),
+                    Decimal(latitude).quantize(Decimal("0.000000")),
+                    info_dict.get('house_type'), info_dict.get('build_date'),
                     info_dict.get('release_date'), info_dict.get('follower_num'),
                     info_dict.get('buy_area'), info_dict.get('floor_num'),
-                    info_dict.get('total_floor_num'), info_dict.get('unit_price'), total_price,
-                    self.datetime, self.datetime)
+                    info_dict.get('total_floor_num'), info_dict.get('unit_price'),
+                    total_price, self.datetime, self.datetime]
             data_list.append(data)
 
     # 批量插入数据库
@@ -117,7 +159,7 @@ class SecondHandSpider:
             if len(data_list) == 0:
                 return
             cursor = spider.db.cursor()
-            sql = 'insert into `second_hand_house`(`project_name`,`district`,`house_type`,`build_date`,`release_date`,`follower_num`,`buy_area`,`floor_num`,`total_floor_num`,`unit_price`,`total_price`,`create_time`,`update_time`) values (%s,%s,%s,%s,%s, %s,%s,%s,%s,%s, %s,%s,%s)'
+            sql = 'insert into `second_hand_house`(`project_name`,`district`,`longitude`,`latitude`,`house_type`,`build_date`,`release_date`,`follower_num`,`buy_area`,`floor_num`,`total_floor_num`,`unit_price`,`total_price`,`create_time`,`update_time`) values (%s,%s,%s,%s,%s, %s,%s,%s,%s,%s, %s,%s,%s,%s,%s)'
             # 执行sql语句
             cursor.executemany(sql, data_list)
             # 将数据提交数据库
@@ -132,7 +174,7 @@ class SecondHandSpider:
     # 执行爬虫
     def run(self):
         # 初始化ua池
-        ua_pool.init()
+        # ua_pool.init()
 
         # 遍历区域选项
         district_map = district.district_map
@@ -149,7 +191,7 @@ class SecondHandSpider:
                 while page_num <= total_page_num:
                     try:
                         # 发起请求
-                        response = self.load_data(key, page_num, area, limit)
+                        response = self.load_list_data(key, page_num, area, limit)
                         if response is not None:
                             # 解析html
                             soup = BeautifulSoup(response.text, 'lxml')
