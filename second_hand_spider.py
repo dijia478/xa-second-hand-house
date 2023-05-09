@@ -103,7 +103,7 @@ class SecondHandSpider:
             house_info_list = info.find('div', class_='houseInfo').text.replace('\n', '').split()
             follow_info_list = info.find('div', class_='followInfo').text.replace('\n', '').split('/')
             total_price = info.find('div', class_='totalPrice totalPrice2').text.replace('\n', '')
-            total_price = Decimal(re.search(r'\d+', total_price).group())
+            total_price = Decimal(re.search(r'\d+', total_price).group()) * 10000
 
             info_dict = {}
             for house_info in house_info_list:
